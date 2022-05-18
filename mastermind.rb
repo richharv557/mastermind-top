@@ -8,6 +8,9 @@ class Mastermind
     @code_to_solve = []
     @includes_counter = 0
     @includes_and_location_counter = 0
+    @guessed_code = 0
+    @hint = ''
+    @turn = 0
   end
 
   def welcome
@@ -18,10 +21,18 @@ class Mastermind
     puts 'Welcome to MASTERMIND. The game of Mind Masters.'
     puts ''
     puts "MASTERMIND is a game where you have to guess your opponent's secret code within a limited number of guesses."
-    puts 'For our game, you the code will be 4 numeric digits (1-6) and you have 12 guesses to crack the code'
+    puts 'For our game, the code will be 4 numeric digits (1-6) and you have 12 guesses to crack the code'
   end
 
   def play_round
+    welcome
+    # choose mode to be added
+    breaker = Player.new
+    breaker.capture_input
+    select_random_code
+    check_if_input_included(@guessed_code)
+    check_if_input_included_in_right_spot(@guessed_code)
+    p create_hint
   end
 
   def select_random_code
@@ -39,6 +50,7 @@ class Mastermind
 
   # split the input code into an hash and see if the sol contains char in loc (using k as location, v as guess number)
   def check_if_input_included_in_right_spot(input)
+    @includes_and_location_counter = 0
     input_hash = {}
     code_to_solve_hash = {}
     input.split('').map(&:to_i).each_with_index { |number, index| input_hash[index + 1] = number }
@@ -46,6 +58,18 @@ class Mastermind
     4.times do |i|
       @includes_and_location_counter += 1 if input_hash[i + 1] == code_to_solve_hash[i + 1]
     end
+  end
+
+  def create_hint
+    @hint = ''
+    @includes_and_location_counter.times { @hint = "#{hint}+" }
+    (@includes_counter - @includes_and_location_counter).times { @hint = "#{hint}-" }
+  end
+
+  def check_for_win
+  end
+
+  def check_for_loss
   end
 end
 
@@ -55,12 +79,14 @@ class Player
   def validate_input(code)
     code.is_a?(Integer) && code >= 1111 && code <= 6666
   end
+
+  def capture_input
+    @guessed_code = gets 'Please enter a 4 digit code using 1-6 for each digit.'
+    until validate_input(@guessed_code)
+      @guessed_code = gets 'Invalid input. Please enter a 4 digit code using 1-6 for each digit.'
+    end
+  end
 end
 
 game = Mastermind.new
-game.select_random_code
-p game.code_to_solve
-p game.check_if_input_included('1234')
-p game.check_if_input_included_in_right_spot('1234')
-p game.includes_counter
-p game.includes_and_location_counter
+game.play_round
