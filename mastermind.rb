@@ -6,8 +6,6 @@ class Mastermind
 
   def initialize
     @code_to_solve = []
-    @partial_matches = 0
-    @exact_matches = 0
     @guessed_code = []
     @hint = ''
     @round = 1
@@ -25,29 +23,29 @@ class Mastermind
     puts 'For our game, the code will be 4 numeric digits (1-6) and you have 12 guesses to crack the code'
   end
 
-  def play_round
+  def play_game
     welcome
     # choose mode to be added
     breaker = Player.new
-    until @game_over
-      breaker.capture_input
-      select_random_code
-      check_if_partial_match(breaker.guessed_code)
-      check_if_exact_match(breaker.guessed_code)
-      create_hint
-      print_hint_and_round_info
-      check_for_win
-      check_for_loss
-    end
+    select_random_code
+    play_round(breaker) until @game_over
+    print_game_over_message
+  end
+
+  def play_round(breaker)
+    breaker.capture_input
+    check_if_partial_match(breaker.guessed_code)
+    check_if_exact_match(breaker.guessed_code)
+    create_hint
+    print_hint_and_round_info
+    check_for_win
+    check_for_loss
   end
 
   def select_random_code
     4.times { @code_to_solve.push(rand(1..6)) }
-    # @code_to_solve = [6, 3, 5, 1]
   end
 
-  # first split the input code into an array and see if the solution contains the character
-  # This is flawed, i don't think it handles the logic for guessing 1 number where it appears multiple times, will test
   def check_if_partial_match(input_array)
     @partial_matches = 0
     input_hash = {}
@@ -76,7 +74,7 @@ class Mastermind
   end
 
   def print_hint_and_round_info
-    puts "Round: {#@round} Result: {#@hint}"
+    puts "Round: #{@round} Result: #{@hint}"
     @round += 1
   end
 
@@ -86,6 +84,15 @@ class Mastermind
 
   def check_for_loss
     @game_over = true if @round > 12
+  end
+
+  def print_game_over_message
+    puts 'Game over!'
+    if @hint == '++++'
+      puts 'You Win!'
+    else
+      puts 'You Lose!'
+    end
   end
 end
 
@@ -113,4 +120,4 @@ class Player
 end
 
 game = Mastermind.new
-game.play_round
+game.play_game
