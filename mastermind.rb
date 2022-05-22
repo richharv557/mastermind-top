@@ -10,6 +10,7 @@ class Mastermind
     @hint = ''
     @round = 1
     @game_over = false
+    @mode = 0
   end
 
   def welcome
@@ -30,6 +31,7 @@ class Mastermind
       puts 'Invalid input. Press 1 if you would like to be BREAKER or 2 if you would like to be MAKER.'
       input = gets.chomp.to_i
     end
+    @mode = input
     input
   end
 
