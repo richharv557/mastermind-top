@@ -6,11 +6,12 @@ class Mastermind
 
   def initialize
     @code_to_solve = []
-    @includes_counter = 0
-    @includes_and_location_counter = 0
-    @guessed_code = 0
+    @partial_matches = 0
+    @exact_matches = 0
+    @guessed_code = []
     @hint = ''
-    @turn = 0
+    @round = 1
+    @game_over = false
   end
 
   def welcome
@@ -28,57 +29,63 @@ class Mastermind
     welcome
     # choose mode to be added
     breaker = Player.new
-    breaker.capture_input
-    select_random_code
-    check_if_input_included(breaker.guessed_code)
-    check_if_input_included_in_right_spot(breaker.guessed_code)
-    p create_hint
+    until @game_over
+      breaker.capture_input
+      select_random_code
+      check_if_partial_match(breaker.guessed_code)
+      check_if_exact_match(breaker.guessed_code)
+      create_hint
+      print_hint_and_round_info
+      check_for_win
+      check_for_loss
+    end
   end
 
   def select_random_code
-    # 4.times { @code_to_solve.push(rand(1..6)) }
-    # 4.times { @code_to_solve.push(1) }
-    @code_to_solve = [4, 3, 2, 1]
+    4.times { @code_to_solve.push(rand(1..6)) }
+    # @code_to_solve = [6, 3, 5, 1]
   end
 
   # first split the input code into an array and see if the solution contains the character
   # This is flawed, i don't think it handles the logic for guessing 1 number where it appears multiple times, will test
-  def check_if_input_included(input)
-    @includes_counter = 0
+  def check_if_partial_match(input_array)
+    @partial_matches = 0
     input_hash = {}
-    code_to_solve_hash = {}
-    hint_hash = {}
-    input_array = input.to_s.split('').map(&:to_i)
-    input_array.each { |number| input_hash[number] = @code_to_solve.count(number) }
-    @code_to_solve.each { |number| code_to_solve_hash[number] = @code_to_solve.count(number) }
-    # have two hashes with counts here, need to go thru each and subtract the count of guesses and the count of actuals
-    # this is broken rn
-    hint_hash = input_hash.map { |key, _value| input_hash[key] - code_to_solve_hash[key] }
+    filtered_array = input_array.select { |number| @code_to_solve.include?(number) }
+    filtered_array.each { |number| input_hash[number] = [@code_to_solve.count(number), input_array.count(number)].min }
+    @partial_matches = input_hash.values.sum
   end
 
   # split the input code into an hash and see if the sol contains char in loc (using k as location, v as guess number)
-  def check_if_input_included_in_right_spot(input)
-    @includes_and_location_counter = 0
+  def check_if_exact_match(input_array)
+    @exact_matches = 0
     input_hash = {}
     code_to_solve_hash = {}
-    input.to_s.split('').map(&:to_i).each_with_index { |number, index| input_hash[index + 1] = number }
+    input_array.each_with_index { |number, index| input_hash[index + 1] = number }
     @code_to_solve.each_with_index { |number, index| code_to_solve_hash[index + 1] = number }
     4.times do |i|
-      @includes_and_location_counter += 1 if input_hash[i + 1] == code_to_solve_hash[i + 1]
+      @exact_matches += 1 if input_hash[i + 1] == code_to_solve_hash[i + 1]
     end
   end
 
   def create_hint
     @hint = ''
-    @includes_and_location_counter.times { @hint += '+' }
-    (@includes_counter - @includes_and_location_counter).times { @hint += '-' }
+    @exact_matches.times { @hint += '+' }
+    (@partial_matches - @exact_matches).times { @hint += '-' }
     @hint
   end
 
+  def print_hint_and_round_info
+    puts "Round: {#@round} Result: {#@hint}"
+    @round += 1
+  end
+
   def check_for_win
+    @game_over = true if @hint == '++++'
   end
 
   def check_for_loss
+    @game_over = true if @round > 12
   end
 end
 
@@ -87,7 +94,7 @@ class Player
   attr_reader :guessed_code
 
   def initialize
-    @guessed_code = 0
+    @guessed_code = []
   end
 
   def validate_input(code)
@@ -96,11 +103,12 @@ class Player
 
   def capture_input
     puts 'Please enter a 4 digit code using 1-6 for each digit.'
-    @guessed_code = gets.chomp.to_i
-    until validate_input(@guessed_code)
+    input = gets.chomp.to_i
+    until validate_input(input)
       puts 'Invalid input. Please enter a 4 digit code using 1-6 for each digit.'
-      @guessed_code = gets.chomp.to_i
+      input = gets.chomp.to_i
     end
+    @guessed_code = input.to_s.split('').map(&:to_i)
   end
 end
 
