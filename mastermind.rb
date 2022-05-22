@@ -40,6 +40,7 @@ class Mastermind
       select_random_code
     else
       breaker = CPU.new
+      @code_to_solve = breaker.capture_starting_guess
     end
     play_round(breaker) until @game_over
     print_game_over_message
@@ -134,6 +135,8 @@ class Player
     end
     @input_code = input.to_s.split('').map(&:to_i)
   end
+
+
 end
 
 # CPU class replaces the user input with Random guesses and then ultimately algorithmically guided guesses
@@ -141,6 +144,16 @@ class CPU < Player
   def capture_input
     @input_code = []
     4.times { @input_code.push(rand(1..6)) }
+  end
+
+  def capture_starting_guess
+    puts 'Please enter a 4 digit code using 1-6 for each digit.'
+    input = gets.chomp.to_i
+    until validate_input(input)
+      puts 'Invalid input. Please enter a 4 digit code using 1-6 for each digit.'
+      input = gets.chomp.to_i
+    end
+    input.to_s.split('').map(&:to_i)
   end
 end
 
