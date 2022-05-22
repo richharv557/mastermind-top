@@ -45,10 +45,15 @@ class Mastermind
   # This is flawed, i don't think it handles the logic for guessing 1 number where it appears multiple times, will test
   def check_if_input_included(input)
     @includes_counter = 0
+    input_hash = {}
+    code_to_solve_hash = {}
+    hint_hash = {}
     input_array = input.to_s.split('').map(&:to_i)
-    input_array.each do |guess_number|
-      @includes_counter += 1 if @code_to_solve.include?(guess_number)
-    end
+    input_array.each { |number| input_hash[number] = @code_to_solve.count(number) }
+    @code_to_solve.each { |number| code_to_solve_hash[number] = @code_to_solve.count(number) }
+    # have two hashes with counts here, need to go thru each and subtract the count of guesses and the count of actuals
+    # this is broken rn
+    hint_hash = input_hash.map { |key, _value| input_hash[key] - code_to_solve_hash[key] }
   end
 
   # split the input code into an hash and see if the sol contains char in loc (using k as location, v as guess number)
