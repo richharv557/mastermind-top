@@ -2,15 +2,43 @@
 
 # MasterMind class currently contains game logic and state
 # Maybe need to split the class apart from the game outside of rounds, currently bugging
+class Game
+  def initialize
+    @keep_playing = true
+  end
+
+  def play_game
+    while @keep_playing
+      new_round = Mastermind.new
+      if new_round.select_mode == 1
+        breaker = Player.new
+        new_round.select_random_code
+      else
+        breaker = CPU.new
+        new_round.code_to_solve = breaker.capture_starting_guess
+      end
+      new_round.play_round(breaker) until new_round.game_over
+      new_round.print_game_over_message
+      ask_to_play_again
+    end
+  end
+
+  def ask_to_play_again
+    puts "Do you want to play again? Enter 'y' to play again or anything else to exit."
+    @keep_playing = false unless gets.chomp == 'y'
+  end
+end
+
+# This represents an instance of the board/round
 class Mastermind
-  attr_reader :code_to_solve, :includes_and_location_counter, :includes_counter, :remaining_codes
+  attr_reader :includes_and_location_counter, :includes_counter, :remaining_codes, :game_over
+  attr_accessor :code_to_solve
 
   def initialize
+    welcome
     @code_to_solve = []
-    @hint = ''
     @round = 1
     @game_over = false
-    @keep_playing = true
     @mode = 0
     @remaining_codes = [1, 2, 3, 4, 5, 6].repeated_permutation(4).to_a
   end
@@ -20,7 +48,7 @@ class Mastermind
     puts '|+++++++++ MASTERMIND +++++++++|'
     puts '|++++++++++++++++++++++++++++++|'
     puts ''
-    puts 'Welcome to MASTERMIND. The game of Mind Masters.'
+    puts 'Welcome to MASTERMIND. The game of Mind Masters, like me!'
     puts ''
     puts "MASTERMIND is a game where you have to guess your opponent's secret code within a limited number of guesses."
     puts 'For our game, the code will be 4 numeric digits (1-6) and the breaker has 12 guesses to crack the code'
@@ -34,23 +62,6 @@ class Mastermind
       input = gets.chomp.to_i
     end
     @mode = input
-    input
-  end
-
-  def play_game
-    while @keep_playing
-      welcome
-      if select_mode == 1
-        breaker = Player.new
-        select_random_code
-      else
-        breaker = CPU.new
-        @code_to_solve = breaker.capture_starting_guess
-      end
-      play_round(breaker) until @game_over
-      print_game_over_message
-      ask_to_play_again
-    end
   end
 
   def play_round(breaker)
@@ -58,15 +69,10 @@ class Mastermind
     check_if_exact_match(breaker.input_code)
     check_if_partial_match(breaker.input_code)
     create_hint
-    print_hint_and_round_info
+    print_hint_and_round_info(breaker.input_code)
     check_for_win
     check_for_loss
     remove_possibilities if @mode == 2
-  end
-
-  def ask_to_play_again
-    puts "Do you want to play again? Enter 'y' to play again or anything else to exit."
-    @keep_playing = false unless gets.chomp == 'y'
   end
 
   def select_random_code
@@ -110,8 +116,8 @@ class Mastermind
     @remaining_codes = temp_array
   end
 
-  def print_hint_and_round_info
-    puts "Round: #{@round} Result: #{@hint}"
+  def print_hint_and_round_info(code)
+    puts "Round: #{@round} Guess: #{code} Result: #{@hint}"
     @round += 1
   end
 
@@ -167,7 +173,7 @@ class CPU < Player
   end
 
   def capture_starting_guess
-    puts 'Please enter a 4 digit code using 1-6 for each digit.'
+    puts 'Please enter a 4 digit code using 1-6 for each digit as a code for the CPU to solve.'
     input = gets.chomp.to_i
     until validate_input(input)
       puts 'Invalid input. Please enter a 4 digit code using 1-6 for each digit.'
@@ -177,5 +183,5 @@ class CPU < Player
   end
 end
 
-game = Mastermind.new
+game = Game.new
 game.play_game
