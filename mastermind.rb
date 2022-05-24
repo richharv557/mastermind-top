@@ -67,11 +67,11 @@ class Mastermind
   def print_game_over_message
     puts 'Game over!'
     if @hint == '++++' && @mode == 1
-      puts 'You Win!'
+      puts "You Win! The code was #{@code_to_solve}"
     elsif @round > 12 && @mode == 2
-      puts 'You Win!'
+      puts "You Win! The code was #{@code_to_solve}"
     else
-      puts 'You Lose!'
+      puts "You Lose! The code was #{@code_to_solve}"
     end
   end
 
