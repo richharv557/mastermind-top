@@ -119,6 +119,7 @@ class Mastermind
     @partial_matches.times { @hint += '-' }
   end
 
+  # Knuth's algorithm with random guesses generated in the CPU subclass
   def remove_possibilities(code)
     @remaining_codes.delete(code)
     original_partials = @partial_matches
@@ -170,8 +171,7 @@ class Player
   end
 end
 
-# CPU class replaces the user input with Random guesses and then ultimately algorithmically guided guesses
-# Algorithm - randomly guess a code, then remove those codes that cannot match from the remaining ones
+# CPU class replaces the user input with Random guesses guided by algorithm in remove_possibilities method
 class CPU < Player
   def capture_input(object)
     @input_code = []
