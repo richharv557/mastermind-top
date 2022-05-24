@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-# MasterMind class currently contains game logic and state
-# Maybe need to split the class apart from the game outside of rounds, currently bugging
+# Game class currently contains gamestate
 class Game
   def initialize
     @keep_playing = true
@@ -23,15 +22,17 @@ class Game
     end
   end
 
+  private
+
   def ask_to_play_again
     puts "Do you want to play again? Enter 'y' to play again or anything else to exit."
     @keep_playing = false unless gets.chomp == 'y'
   end
 end
 
-# This represents an instance of the board/round
+# This represents an instance of the board/round, contains round state information
 class Mastermind
-  attr_reader :includes_and_location_counter, :includes_counter, :remaining_codes, :game_over
+  attr_reader :remaining_codes, :game_over
   attr_accessor :code_to_solve
 
   def initialize
@@ -42,6 +43,43 @@ class Mastermind
     @mode = 0
     @remaining_codes = [1, 2, 3, 4, 5, 6].repeated_permutation(4).to_a
   end
+
+  def select_mode
+    @mode = gets.chomp.to_i
+    until @mode == 1 || @mode == 2
+      puts 'Invalid input. Enter 1 if you would like to be BREAKER or 2 if you would like to be MAKER.'
+      @mode = gets.chomp.to_i
+    end
+    @mode
+  end
+
+  def play_round(breaker)
+    breaker.capture_input(self)
+    check_if_exact_match(breaker.input_code, code_to_solve)
+    check_if_partial_match(breaker.input_code, code_to_solve)
+    create_hint
+    print_hint_and_round_info(breaker.input_code)
+    check_for_win
+    check_for_loss
+    remove_possibilities(breaker.input_code) if @mode == 2
+  end
+
+  def print_game_over_message
+    puts 'Game over!'
+    if @hint == '++++' && @mode == 1
+      puts 'You Win!'
+    elsif @round > 12 && @mode == 2
+      puts 'You Win!'
+    else
+      puts 'You Lose!'
+    end
+  end
+
+  def select_random_code
+    4.times { @code_to_solve.push(rand(1..6)) }
+  end
+
+  private
 
   def welcome
     puts '|++++++++++++++++++++++++++++++|'
@@ -55,45 +93,21 @@ class Mastermind
     puts 'Enter 1 to be code-BREAKER or 2 for code-MAKER. The CPU will be your oponent if you are MAKER.'
   end
 
-  def select_mode
-    input = gets.chomp.to_i
-    until input == 1 || input == 2
-      puts 'Invalid input. Enter 1 if you would like to be BREAKER or 2 if you would like to be MAKER.'
-      input = gets.chomp.to_i
-    end
-    @mode = input
-  end
-
-  def play_round(breaker)
-    breaker.capture_input(self)
-    check_if_exact_match(breaker.input_code)
-    check_if_partial_match(breaker.input_code)
-    create_hint
-    print_hint_and_round_info(breaker.input_code)
-    check_for_win
-    check_for_loss
-    remove_possibilities if @mode == 2
-  end
-
-  def select_random_code
-    4.times { @code_to_solve.push(rand(1..6)) }
-  end
-
-  def check_if_partial_match(input_array)
+  def check_if_partial_match(input_array, code_to_solve)
     @partial_matches = 0
     input_hash = {}
-    filtered_array = input_array.select { |number| @code_to_solve.include?(number) }
-    filtered_array.each { |number| input_hash[number] = [@code_to_solve.count(number), input_array.count(number)].min }
+    filtered_array = input_array.select { |number| code_to_solve.include?(number) }
+    filtered_array.each { |number| input_hash[number] = [code_to_solve.count(number), input_array.count(number)].min }
     @partial_matches = input_hash.values.sum - @exact_matches
   end
 
   # split the input code into an hash and see if the sol contains char in loc (using k as location, v as guess number)
-  def check_if_exact_match(input_array)
+  def check_if_exact_match(input_array, code_to_solve)
     @exact_matches = 0
     input_hash = {}
     code_to_solve_hash = {}
     input_array.each_with_index { |number, index| input_hash[index + 1] = number }
-    @code_to_solve.each_with_index { |number, index| code_to_solve_hash[index + 1] = number }
+    code_to_solve.each_with_index { |number, index| code_to_solve_hash[index + 1] = number }
     4.times do |i|
       @exact_matches += 1 if input_hash[i + 1] == code_to_solve_hash[i + 1]
     end
@@ -105,13 +119,14 @@ class Mastermind
     @partial_matches.times { @hint += '-' }
   end
 
-  def remove_possibilities
+  def remove_possibilities(code)
+    @remaining_codes.delete(code)
     original_partials = @partial_matches
     original_exacts = @exact_matches
-    temp_array = @remaining_codes.filter do |set|
-      check_if_partial_match(set)
-      check_if_exact_match(set)
-      @partial_matches + @exact_matches > original_partials + original_exacts
+    temp_array = @remaining_codes.select do |set|
+      check_if_exact_match(code, set)
+      check_if_partial_match(code, set)
+      original_partials == @partial_matches && original_exacts == @exact_matches
     end
     @remaining_codes = temp_array
   end
@@ -128,17 +143,6 @@ class Mastermind
   def check_for_loss
     @game_over = true if @round > 12
   end
-
-  def print_game_over_message
-    puts 'Game over!'
-    if @hint == '++++' && @mode == 1
-      puts 'You Win!'
-    elsif @round > 12 && @mode == 2
-      puts 'You Win!'
-    else
-      puts 'You Lose!'
-    end
-  end
 end
 
 # Player class represents the player and the computer playing the game
@@ -149,10 +153,6 @@ class Player
     @input_code = []
   end
 
-  def validate_input(code)
-    code.is_a?(Integer) && code >= 1111 && code <= 6666
-  end
-
   def capture_input(_object)
     puts 'Please enter a 4 digit code using 1-6 for each digit.'
     input = gets.chomp.to_i
@@ -161,6 +161,12 @@ class Player
       input = gets.chomp.to_i
     end
     @input_code = input.to_s.split('').map(&:to_i)
+  end
+
+  private
+
+  def validate_input(code)
+    code.is_a?(Integer) && code >= 1111 && code <= 6666
   end
 end
 
